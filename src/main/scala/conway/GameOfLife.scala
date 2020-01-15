@@ -44,6 +44,43 @@ class InteractionSpec(interaction: Interaction) extends FreeSpec with Matchers {
   }
 }
 
+trait World[W] { self =>
+  def create(width: Int, height: Int): W
+
+  def width(w: W): Int
+  def height(w: W): Int
+  def populate(w: W, x: Int, y: Int): W
+  def cell(w: W, x: Int, y: Int): Cell
+
+  implicit class WorldExt(w: W) {
+    val width = self.width(w)
+    val height = self.height(w)
+    def populate(x: Int, y: Int): W = self.populate(w, x, y)
+    def cell(x: Int, y: Int): Cell = self.cell(w, x, y)
+  }
+}
+
+class WorldSpec[W](world: World[W]) extends FreeSpec with Matchers {
+  import world._
+
+  "A new world has size (width, height)" in {
+    world.create(10, 20).width shouldBe 10
+    world.create(10, 20).height shouldBe 20
+  }
+
+  "A new world contains only dead cells" in {
+    world.create(10, 10).cell(0, 0) shouldBe Dead
+    world.create(4, 12).cell(3, 5) shouldBe Dead
+  }
+
+  "A populated cell is alive" in {
+    world.create(6, 8).populate(2, 7).cell(2, 7) shouldBe Live
+    world.create(12, 15).populate(8, 8).cell(8, 8) shouldBe Live
+  }
+}
+
 object GameOfLife extends ScalaTestSculpting {
   val interaction = any[Interaction].satisfying(new InteractionSpec(_))
+
+  def world[W] = any[World, W].satisfying(new WorldSpec(_))
 }
