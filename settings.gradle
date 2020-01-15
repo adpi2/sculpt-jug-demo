@@ -3,5 +3,6 @@ rootProject.name = 'sculpt-jug-demo'
 sourceControl {
     gitRepository("https://gitlab.com/scala-sculpt/sculpt.git") {
         producesModule("sculpt:sculpt")
+        producesModule("sculpt:sculpt-test")
     }
 }

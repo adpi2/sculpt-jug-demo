@@ -10,10 +10,16 @@ version '1.0-SNAPSHOT'
 
 dependencies {
     implementation 'org.scala-lang:scala-library:2.12.8'
+    implementation 'org.scalatest:scalatest_2.12:3.0.6'
     implementation('sculpt:sculpt') {
         version {
             branch = 'master'
         }
     }
-    compileOnly 'org.scalatest:scalatest_2.12:3.0.6'
+
+    testImplementation('sculpt:sculpt-test') {
+        version {
+            branch = 'master'
+        }
+    }
 }

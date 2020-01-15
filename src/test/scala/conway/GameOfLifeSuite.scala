@@ -1,0 +1,5 @@
+package conway
+
+class GameOfLifeSuite {
+
+}
