@@ -1,7 +1,8 @@
 package conway
 
 import org.scalatest.{FreeSpec, Matchers}
-import sculpt.scalatest.ScalaTestSculpting
+import sculpt.Potential
+import sculpt.scalatest.{ScalaTestSculpting, Spec}
 
 sealed trait Cell
 case object Dead extends Cell
@@ -53,8 +54,8 @@ trait World[W] { self =>
   def cell(w: W, x: Int, y: Int): Cell
 
   implicit class WorldExt(w: W) {
-    val width = self.width(w)
-    val height = self.height(w)
+    val width: Int = self.width(w)
+    val height: Int = self.height(w)
     def populate(x: Int, y: Int): W = self.populate(w, x, y)
     def cell(x: Int, y: Int): Cell = self.cell(w, x, y)
   }
@@ -79,8 +80,40 @@ class WorldSpec[W](world: World[W]) extends FreeSpec with Matchers {
   }
 }
 
-object GameOfLife extends ScalaTestSculpting {
-  val interaction = any[Interaction].satisfying(new InteractionSpec(_))
+trait Neighborhood[W] { self =>
+  def neighbors(w: W, x: Int, y: Int): Seq[Cell]
 
-  def world[W] = any[World, W].satisfying(new WorldSpec(_))
+  implicit class NeighborhoodExt(w: W) {
+    def neighbors(x: Int, y: Int): Seq[Cell] = self.neighbors(w, x, y)
+  }
+}
+
+class NeighborhoodSpec[W](world: World[W], neighborhood: Neighborhood[W]) extends FreeSpec with Matchers {
+  import neighborhood._
+  import world._
+
+  "A corner cell has 3 neighbors" in {
+    world.create(4, 4).neighbors(0, 0) should have size 3
+    world.create(4, 4).neighbors(3, 0) should have size 3
+  }
+
+  "A side cell has 5 neighbors" in {
+    world.create(4, 4).neighbors(0, 2) should have size 5
+    world.create(4, 4).neighbors(1, 0) should have size 5
+  }
+
+  "The neighbors are the cells that are horizontally, vertically, or diagonally adjacent" in {
+    world.create(4, 4).populate(0, 0).populate(0, 1).populate(1, 2)
+        .neighbors(1, 1) should contain theSameElementsInOrderAs Seq(Live, Live, Dead, Dead, Live, Dead, Dead, Dead)
+  }
+}
+
+object GameOfLife extends ScalaTestSculpting {
+  val interaction: Potential[Interaction, Spec] = any[Interaction].satisfying(new InteractionSpec(_))
+
+  def potential[W]: Potential[(World[W], Neighborhood[W]), Spec] = for {
+    world <- any[World, W].satisfying(new WorldSpec(_))
+    neighborhood <- any[Neighborhood, W].satisfying(new NeighborhoodSpec(world, _))
+  } yield (world, neighborhood)
+
 }
