@@ -5,6 +5,5 @@ import sculpt.test.SculptSuite
 import sculpt.test.scalatest.ScalaTestSupport
 
 class GameOfLifeSuite extends SculptSuite(Resource("/impl")) with ScalaTestSupport {
-  test(GameOfLife.interaction)
   test(GameOfLife.potential)
 }

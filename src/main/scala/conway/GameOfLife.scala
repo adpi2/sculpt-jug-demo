@@ -108,12 +108,46 @@ class NeighborhoodSpec[W](world: World[W], neighborhood: Neighborhood[W]) extend
   }
 }
 
-object GameOfLife extends ScalaTestSculpting {
-  val interaction: Potential[Interaction, Spec] = any[Interaction].satisfying(new InteractionSpec(_))
+trait Life[W] { self =>
+  def next(w: W): W
 
-  def potential[W]: Potential[(World[W], Neighborhood[W]), Spec] = for {
+  implicit class LifeExt(w: W) {
+    def next: W = self.next(w)
+  }
+}
+
+class LifeSpec[W](world: World[W], neighborhood: Neighborhood[W], interaction: Interaction, life: Life[W]) extends FreeSpec with Matchers {
+  import world._
+  import neighborhood._
+  import interaction._
+  import life._
+
+  "A cell of the next generation is the result of the interaction with its neighbors" in {
+    val init = world.create(5, 6).populate(2, 2).populate(3, 4).populate(2, 1).populate(1, 1)
+    init.next.cell(1, 2) shouldBe init.cell(1, 2).interact(init.neighbors(1, 2))
+    init.next.cell(2, 2) shouldBe init.cell(2, 2).interact(init.neighbors(2, 2))
+  }
+}
+
+case class GameOfLife[W](world: World[W], life: Life[W]) {
+  def create(width: Int, height: Int): W = world.create(width, height)
+
+  implicit class GameOfLifeExt(w: W) {
+    val width: Int = world.width(w)
+    val height: Int = world.height(w)
+    def cell(x: Int, y: Int): Cell = world.cell(w, x, y)
+    def populate(x: Int, y: Int): W = world.populate(w, x, y)
+    def next: W = w.next
+  }
+}
+
+object GameOfLife extends ScalaTestSculpting {
+  def potential[W]: Potential[GameOfLife[W], Spec] = for {
+    interaction <- any[Interaction].satisfying(new InteractionSpec(_))
     world <- any[World, W].satisfying(new WorldSpec(_))
     neighborhood <- any[Neighborhood, W].satisfying(new NeighborhoodSpec(world, _))
-  } yield (world, neighborhood)
-
+    life <- any[Life, W].satisfying(new LifeSpec(world, neighborhood, interaction, _))
+  } yield {
+    GameOfLife(world, life)
+  }
 }
