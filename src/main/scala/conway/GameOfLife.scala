@@ -137,7 +137,7 @@ case class GameOfLife[W](world: World[W], life: Life[W]) {
     val height: Int = world.height(w)
     def cell(x: Int, y: Int): Cell = world.cell(w, x, y)
     def populate(x: Int, y: Int): W = world.populate(w, x, y)
-    def next: W = w.next
+    def next: W = life.next(w)
   }
 }
 
